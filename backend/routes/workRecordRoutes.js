@@ -1,18 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const WorkRecord = require('../models/WorkRecord');
-const User = require('../models/User');
+const auth = require('../middleware/auth');
 
 // Crear un nuevo registro laboral (Check-in)
-router.post('/workrecords', async (req, res) => {
-  const { userId, checkInTime, location } = req.body;
+router.post('/workrecords', auth, async (req, res) => {
+  const { checkInTime, location } = req.body;
 
   try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
+    const userId = req.user.userId;
 
+    // Creando un nuevo registro laboral
     const newWorkRecord = new WorkRecord({
       userId,
       checkInTime,
@@ -27,9 +25,10 @@ router.post('/workrecords', async (req, res) => {
 });
 
 // Obtener todos los registros laborales de un usuario
-router.get('/workrecords/:userId', async (req, res) => {
+router.get('/workrecords', auth, async (req, res) => {
   try {
-    const workRecords = await WorkRecord.find({ userId: req.params.userId });
+    const userId = req.user.userId;
+    const workRecords = await WorkRecord.find({ userId });
     res.status(200).json(workRecords);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener los registros laborales' });
@@ -37,7 +36,7 @@ router.get('/workrecords/:userId', async (req, res) => {
 });
 
 // Actualizar la hora de salida de un registro (Check-out)
-router.put('/workrecords/:id', async (req, res) => {
+router.put('/workrecords/:id', auth, async (req, res) => {
   const { checkOutTime } = req.body;
 
   try {
@@ -52,7 +51,7 @@ router.put('/workrecords/:id', async (req, res) => {
 });
 
 // Eliminar un registro laboral
-router.delete('/workrecords/:id', async (req, res) => {
+router.delete('/workrecords/:id', auth, async (req, res) => {
   try {
     const workRecord = await WorkRecord.findByIdAndDelete(req.params.id);
     if (!workRecord) {
