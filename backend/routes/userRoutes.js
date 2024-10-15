@@ -9,12 +9,17 @@ router.post("/users", async (req, res) => {
   const { name, email, password, role, company } = req.body;
 
   try {
+    // Hashear la contraseña antes de guardarla
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Definir el rol por defecto si no se especifica
+    const userRole = role || "employee";
+
     const newUser = new User({
       name,
       email,
       password: hashedPassword,
-      role,
+      role: userRole,
       company,
     });
     await newUser.save();
@@ -91,10 +96,14 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Contraseña incorrecta" });
     }
 
-    // Crear el token
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    // Crear el token icluyendo el userId y role
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
 
     res.status(200).json({ token });
   } catch (error) {
